@@ -1,1 +1,240 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Network | cambo-kh.com</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #020406;
+            --card: rgba(13, 17, 23, 0.95);
+            --accent: #00d4ff;
+            --upload: #00ffaa;
+            --ping: #ffcc00;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #f0f6fc;
+        }
 
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--card);
+            background-image: radial-gradient(at 50% 0%, rgba(0, 212, 255, 0.07) 0px, transparent 50%);
+            color: var(--text);
+            margin: 0; padding: 40px 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .main-container {
+            width: 100%; max-width: 550px;
+            background: var(--card);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--border);
+            border-radius: 35px;
+            padding: 35px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+            margin-bottom: 30px;
+        }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 12px; letter-spacing: 4px; color: #8b949e; text-transform: uppercase; }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .card-stat {
+            background: rgba(255,255,255,0.02); padding: 20px;
+            border-radius: 20px; border: 1px solid var(--border); text-align: center;
+        }
+
+        .speed-val { font-family: 'JetBrains Mono'; font-size: 32px; font-weight: 800; display: block; }
+        .label { font-size: 10px; color: #8b949e; text-transform: uppercase; margin-bottom: 5px; }
+        .unit { font-size: 10px; opacity: 0.5; }
+
+        .sub-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            background: rgba(0,0,0,0.2); border-radius: 20px; padding: 15px; margin-bottom: 25px;
+        }
+
+        .btn-run {
+            width: 100%; background: #fff; color: #000; border: none; padding: 18px;
+            border-radius: 18px; font-weight: 800; cursor: pointer; transition: 0.3s;
+        }
+        .btn-run:hover { transform: scale(1.02); }
+        .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* History Style */
+        .history-container {
+            width: 100%; max-width: 550px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 25px; padding: 25px;
+        }
+
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .history-header h2 { font-size: 14px; margin: 0; color: #8b949e; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); color: #484f58; font-weight: 400; }
+        td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.03); font-family: 'JetBrains Mono'; }
+        
+        .c-down { color: var(--accent); }
+        .c-up { color: var(--upload); }
+        .empty-msg { text-align: center; color: #484f58; padding: 20px; }
+
+        .progress-line { width: 100%; height: 3px; background: rgba(255,255,255,0.05); margin-top: 20px; display: none; overflow: hidden; }
+        .bar { width: 0%; height: 100%; background: var(--accent); transition: 0.3s; }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div class="header">
+            <i class="fas fa-network-wired" style="color: var(--accent); font-size: 24px;"></i>
+            <h1>Speed Network</h1>
+        </div>
+
+        <div class="grid">
+            <div class="card-stat">
+                <span class="label">Download</span>
+                <span class="speed-val" id="down" style="color: var(--accent);">0.0</span>
+                <span class="unit">Mbps</span>
+            </div>
+            <div class="card-stat">
+                <span class="label">Upload</span>
+                <span class="speed-val" id="up" style="color: var(--upload);">0.0</span>
+                <span class="unit">Mbps</span>
+            </div>
+        </div>
+
+        <div class="sub-grid">
+            <div style="text-align: center; border-right: 1px solid var(--border);">
+                <span class="label">Ping</span>
+                <div style="color: var(--ping); font-family: 'JetBrains Mono';"><span id="ping">--</span> <span class="unit">ms</span></div>
+            </div>
+            <div style="text-align: center;">
+                <span class="label">Jitter</span>
+                <div style="color: var(--ping); font-family: 'JetBrains Mono';"><span id="jitter">--</span> <span class="unit">ms</span></div>
+            </div>
+        </div>
+
+        <button class="btn-run" id="btn" onclick="startTest()">
+            <i class="fas fa-play"></i> START ANALYSIS
+        </button>
+
+        <div class="progress-line" id="pLine"><div class="bar" id="pBar"></div></div>
+    </div>
+
+    <div class="history-container">
+        <div class="history-header">
+            <h2><i class="fas fa-history"></i> Recent Activity</h2>
+            <button onclick="clearHistory()" style="background:none; border:none; color:#da3633; cursor:pointer; font-size:10px;">CLEAR</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Down</th>
+                    <th>Up</th>
+                    <th>Ping</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody">
+                </tbody>
+        </table>
+        <div id="emptyMsg" class="empty-msg">No records yet.</div>
+    </div>
+
+    <script>
+        let history = [];
+
+        async function startTest() {
+            const btn = document.getElementById('btn');
+            const pBar = document.getElementById('pBar');
+            const pLine = document.getElementById('pLine');
+            
+            btn.disabled = true;
+            pLine.style.display = 'block';
+            pBar.style.width = '0%';
+
+            try {
+                // 1. Ping & Jitter
+                let pings = [];
+                for(let i=0; i<4; i++) {
+                    const s = Date.now();
+                    await fetch('https://icanhazip.com/?t=' + s, { mode: 'no-cors' });
+                    pings.push(Date.now() - s);
+                    pBar.style.width = (i * 10) + '%';
+                }
+                const resPing = Math.floor(pings.reduce((a,b)=>a+b)/pings.length);
+                const resJitter = Math.max(...pings) - Math.min(...pings);
+                document.getElementById('ping').innerText = resPing;
+                document.getElementById('jitter').innerText = resJitter;
+
+                // 2. Download
+                pBar.style.background = 'var(--accent)';
+                const dUrl = "https://upload.wikimedia.org/wikipedia/commons/4/4e/Pleiades_large.jpg?cache=" + Date.now();
+                const dStart = Date.now();
+                const dRes = await fetch(dUrl);
+                const dBlob = await dRes.blob();
+                const resDown = ((dBlob.size * 8) / ((Date.now() - dStart) / 1000) / (1024 * 1024)).toFixed(1);
+                document.getElementById('down').innerText = resDown;
+                pBar.style.width = '70%';
+
+                // 3. Upload
+                pBar.style.background = 'var(--upload)';
+                const uData = new Uint8Array(1000000); // 1MB
+                const uStart = Date.now();
+                await fetch('https://httpbin.org/post', { method: 'POST', body: uData });
+                const resUp = ((uData.length * 8) / ((Date.now() - uStart) / 1000) / (1024 * 1024)).toFixed(1);
+                document.getElementById('up').innerText = resUp;
+                pBar.style.width = '100%';
+
+                // Add to History
+                addToHistory(resDown, resUp, resPing);
+
+            } catch (e) {
+                alert("Connection failed.");
+            }
+
+            btn.disabled = false;
+            pLine.style.display = 'none';
+        }
+
+        function addToHistory(down, up, ping) {
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+            
+            const entry = { time: timeStr, down, up, ping };
+            history.unshift(entry); // Add to top
+            if(history.length > 5) history.pop(); // Keep only 5
+
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const body = document.getElementById('historyBody');
+            const msg = document.getElementById('emptyMsg');
+            
+            if(history.length > 0) msg.style.display = 'none';
+            
+            body.innerHTML = history.map(h => `
+                <tr>
+                    <td>${h.time}</td>
+                    <td class="c-down">${h.down}</td>
+                    <td class="c-up">${h.up}</td>
+                    <td style="color:var(--ping)">${h.ping}</td>
+                </tr>
+            `).join('');
+        }
+
+        function clearHistory() {
+            history = [];
+            document.getElementById('historyBody').innerHTML = '';
+            document.getElementById('emptyMsg').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+
+ខ្ញុំចង់ public បែបនេះ លក្ខណៈ Free
